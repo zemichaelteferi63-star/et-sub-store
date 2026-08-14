@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         String    @default("ADMIN")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Product {
+  id           String    @id @default(uuid())
+  slug         String    @unique
+  nameEn       String
+  nameAm       String
+  descEn       String
+  descAm       String
+  duration     String    // e.g. "1 Month", "3 Months", "1 Year"
+  durationAm   String    // e.g. "1 ወር", "3 ወር", "1 ዓመት"
+  priceETB     Float
+  badge        String?   // e.g. "Popular", "Best Value"
+  featuresEn   String    // JSON string array
+  featuresAm   String    // JSON string array
+  imageUrl     String?
+  isActive     Boolean   @default(true)
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  orders       Order[]
+}
+
+model Order {
+  id               String      @id @default(uuid())
+  orderNumber      String      @unique // e.g. GEM-20260813-001
+  accessToken      String      @unique // Secret token for customer view
+  customerName     String
+  customerPhone    String
+  customerTelegram String?
+  productId        String
+  product          Product     @relation(fields: [productId], references: [id])
+  amountETB        Float
+  currency         String      @default("ETB")
+  paymentMethod    String      @default("TELEBIRR")
+  transactionId    String?     // Telebirr transaction/reference number
+  paymentStatus    String      @default("PENDING") // PENDING, PAYMENT_PROCESSING, PAID, PAYMENT_FAILED
+  orderStatus      String      @default("PENDING") // PENDING, PROCESSING, DELIVERED, CANCELLED, REFUNDED
+  activationLink   String?     // Supplier activation URL / key
+  deliveredAt      DateTime?
+  deliveredBy      String?     // Admin user email or ID
+  adminNotes       String?
+  expiryDate       DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  auditLogs        AuditLog[]
+}
+
+model Setting {
+  key         String   @id
+  value       String
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  orderId     String?
+  order       Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  action      String   // e.g., "PAYMENT_VERIFIED", "ACTIVATION_DELIVERED", "STATUS_CHANGE"
+  details     String?
+  performedBy String   // "SYSTEM" or Admin email
+  createdAt   DateTime @default(now())
+}
