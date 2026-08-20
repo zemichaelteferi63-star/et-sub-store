@@ -75,6 +75,7 @@ function CheckoutContent() {
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
 
     if (!customerName.trim()) {
       setToast({ message: t.checkout.errors.nameRequired, type: 'error' });
@@ -266,8 +267,8 @@ function CheckoutContent() {
           {selectedProduct && (
             <TelebirrPaymentGuide
               amountETB={selectedProduct.priceETB}
-              receiverName={settings?.telebirrReceiverName || 'ET-Sub Store AI Services'}
-              receiverPhone={settings?.telebirrReceiverPhone || '0988798834'}
+              receiverName={settings?.telebirrReceiverName || 'Ze Michael'}
+              receiverPhone={settings?.telebirrReceiverPhone || '0996976737'}
               qrUrl={settings?.telebirrQrUrl}
             />
           )}

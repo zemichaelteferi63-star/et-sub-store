@@ -21,11 +21,11 @@ export interface StoreSettings {
 
 export const DEFAULT_SETTINGS: StoreSettings = {
   storeName: 'ET-Sub Store',
-  supportPhone: '0988798834',
+  supportPhone: '0996976737',
   supportTelegram: 'Et_substore_support',
   currency: 'ETB',
-  telebirrReceiverName: 'ET-Sub Store AI Services',
-  telebirrReceiverPhone: '0988798834',
+  telebirrReceiverName: 'Ze Michael',
+  telebirrReceiverPhone: '0996976737',
   telebirrDevMode: true,
   telebirrQrUrl: '',
   customRequestTitleEn: 'Looking for another subscription?',

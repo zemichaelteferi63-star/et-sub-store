@@ -115,6 +115,14 @@ function ensureDataFile(): DatabaseData {
   }
 
   if (chosen) {
+    // Ensure settings fallbacks match current configuration
+    if (chosen.settings) {
+      for (const s of chosen.settings) {
+        if (s.key === 'supportPhone' && s.value === '0988798834') s.value = '0996976737';
+        if (s.key === 'telebirrReceiverPhone' && s.value === '0988798834') s.value = '0996976737';
+        if (s.key === 'telebirrReceiverName' && s.value === 'ET-Sub Store AI Services') s.value = 'Ze Michael';
+      }
+    }
     globalThis._etSubStoreDataCache = chosen;
     return chosen;
   }
@@ -355,11 +363,11 @@ function ensureDataFile(): DatabaseData {
     orders: [],
     settings: [
       { key: 'storeName', value: 'ET-Sub Store', updatedAt: new Date() },
-      { key: 'supportPhone', value: '0988798834', updatedAt: new Date() },
+      { key: 'supportPhone', value: '0996976737', updatedAt: new Date() },
       { key: 'supportTelegram', value: 'Et_substore_support', updatedAt: new Date() },
       { key: 'currency', value: 'ETB', updatedAt: new Date() },
-      { key: 'telebirrReceiverName', value: 'ET-Sub Store AI Services', updatedAt: new Date() },
-      { key: 'telebirrReceiverPhone', value: '0988798834', updatedAt: new Date() },
+      { key: 'telebirrReceiverName', value: 'Ze Michael', updatedAt: new Date() },
+      { key: 'telebirrReceiverPhone', value: '0996976737', updatedAt: new Date() },
       { key: 'telebirrDevMode', value: 'true', updatedAt: new Date() },
       { key: 'customRequestTitleEn', value: 'Looking for another subscription?', updatedAt: new Date() },
       { key: 'customRequestTitleAm', value: 'ሌላ ሳብስክሪፕሽን ይፈልጋሉ?', updatedAt: new Date() },
@@ -524,6 +532,12 @@ export const prisma = {
         if (args.where.paymentStatus) {
           results = results.filter((o) => o.paymentStatus === args.where.paymentStatus);
         }
+        if (args.where.transactionId) {
+          const targetTx = typeof args.where.transactionId === 'string' ? args.where.transactionId.trim().toUpperCase() : null;
+          if (targetTx) {
+            results = results.filter((o) => o.transactionId?.trim().toUpperCase() === targetTx);
+          }
+        }
         if (args.where.OR) {
           results = results.filter((o) => {
             return args.where.OR.some((cond: any) => {
@@ -547,6 +561,18 @@ export const prisma = {
           });
         }
       }
+
+      // Deduplicate orders by orderNumber or id to prevent any duplicated entries
+      const seen = new Set<string>();
+      const deduplicated: OrderModel[] = [];
+      for (const o of results) {
+        const key = (o.orderNumber || o.id).toUpperCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          deduplicated.push(o);
+        }
+      }
+      results = deduplicated;
 
       // Sort
       results.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

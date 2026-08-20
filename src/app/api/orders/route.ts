@@ -26,10 +26,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Selected product is unavailable' }, { status: 404 });
     }
 
+    // Duplicate Protection: Check if an order with the exact same transactionId already exists
+    const cleanTxId = transactionId ? transactionId.trim().toUpperCase() : null;
+    if (cleanTxId && cleanTxId.length >= 4) {
+      const existingTxOrder = await prisma.order.findFirst({
+        where: { transactionId: cleanTxId },
+        include: { product: true },
+      });
+
+      if (existingTxOrder) {
+        return NextResponse.json({
+          success: true,
+          orderNumber: existingTxOrder.orderNumber,
+          accessToken: existingTxOrder.accessToken,
+          paymentStatus: existingTxOrder.paymentStatus,
+          redirectUrl: `/orders/${existingTxOrder.orderNumber}?token=${existingTxOrder.accessToken}`,
+          isExisting: true,
+        });
+      }
+    }
+
     const orderNumber = generateOrderNumber();
     const accessToken = generateAccessToken();
 
-    const paymentStatus = transactionId && transactionId.trim().length > 4 ? 'PAYMENT_PROCESSING' : 'PENDING';
+    const paymentStatus = cleanTxId ? 'PAYMENT_PROCESSING' : 'PENDING';
 
     const order = await prisma.order.create({
       data: {

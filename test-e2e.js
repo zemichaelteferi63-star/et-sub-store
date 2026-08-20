@@ -53,6 +53,9 @@ async function runTests() {
   console.log(`✓ Store Brand Name: "${settings.storeName}"`);
   console.log(`✓ Support Telegram: "@${settings.supportTelegram}"`);
   console.log(`✓ Support Phone: "${settings.supportPhone}"`);
+  if (settings.supportPhone !== '0996976737') {
+    throw new Error(`Expected supportPhone 0996976737, got ${settings.supportPhone}`);
+  }
 
   // Test 2: Products Catalog
   console.log('\n2. Testing Products API & Configured Pricing...');
@@ -99,7 +102,7 @@ async function runTests() {
     customerPhone: '+251911998877',
     customerTelegram: '', // empty / optional
     productId: gemini18m.id,
-    transactionId: 'TB55443322',
+    transactionId: 'TB99887766',
     language: 'en',
   };
 

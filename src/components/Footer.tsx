@@ -6,7 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Sparkles, MessageCircle, Phone, Shield, FileText, RefreshCw, X, ShoppingBag, ExternalLink } from 'lucide-react';
 
 export default function Footer({
-  supportPhone = '0988798834',
+  supportPhone = '0996976737',
   supportTelegram = 'Et_substore_support',
 }: {
   supportPhone?: string;
