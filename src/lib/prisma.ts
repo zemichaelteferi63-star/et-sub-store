@@ -85,17 +85,35 @@ declare global {
   var _etSubStoreDataCache: DatabaseData | undefined;
 }
 
-const CLOUD_DB_URL = 'https://api.restful-api.dev/objects/ff8081819ff5b11001a01f6d4cf25dae';
+let activeCloudObjectId = 'ff8081819ff5b11001a01f6d4cf25dae';
 let lastCloudSyncTime = 0;
+
+function getCloudUrl(): string {
+  return `https://api.restful-api.dev/objects/${activeCloudObjectId}`;
+}
 
 async function syncFromCloudIfNeeded(): Promise<DatabaseData> {
   const localData = ensureDataFile();
   const now = Date.now();
-  if (now - lastCloudSyncTime > 2000) {
+  if (now - lastCloudSyncTime > 1500) {
     lastCloudSyncTime = now;
     try {
-      const res = await fetch(CLOUD_DB_URL, { cache: 'no-store' });
-      if (res.ok) {
+      let res = await fetch(getCloudUrl(), { cache: 'no-store' });
+      if (res.status === 404) {
+        console.warn('[CloudDB] Remote object 404. Auto-recreating cloud DB container...');
+        const createRes = await fetch('https://api.restful-api.dev/objects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'ethio_gemini_store_db', data: localData }),
+        });
+        if (createRes.ok) {
+          const newObj = await createRes.json();
+          if (newObj.id) {
+            activeCloudObjectId = newObj.id;
+            console.log('[CloudDB] New active Cloud Object ID initialized:', activeCloudObjectId);
+          }
+        }
+      } else if (res.ok) {
         const body = await res.json();
         if (body.data?.orders && Array.isArray(body.data.orders)) {
           const ordersMap = new Map<string, OrderModel>();
@@ -117,7 +135,9 @@ async function syncFromCloudIfNeeded(): Promise<DatabaseData> {
           saveLocalDiskOnly(localData);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('[CloudDB Sync Exception]', e);
+    }
   }
   return localData;
 }
