@@ -28,7 +28,7 @@ export async function POST(
       where: { orderNumber },
       data: {
         paymentStatus: 'PAID',
-        orderStatus: order.orderStatus === 'PENDING' ? 'PROCESSING' : order.orderStatus,
+        orderStatus: 'VERIFIED',
       },
       include: { product: true },
     });

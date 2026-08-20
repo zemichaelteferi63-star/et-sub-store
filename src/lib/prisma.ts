@@ -90,30 +90,39 @@ function ensureDataFile(): DatabaseData {
     return globalThis._etSubStoreDataCache;
   }
 
-  const dir = path.dirname(DB_FILE);
-  if (!fs.existsSync(dir)) {
+  const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
+  let dataFromTmp: DatabaseData | null = null;
+  let dataFromDbFile: DatabaseData | null = null;
+
+  if (fs.existsSync(tmpFile)) {
     try {
-      fs.mkdirSync(dir, { recursive: true });
+      const content = fs.readFileSync(tmpFile, 'utf-8');
+      dataFromTmp = JSON.parse(content);
     } catch (e) {}
   }
 
   if (fs.existsSync(DB_FILE)) {
     try {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
-      const parsed = JSON.parse(content);
-      globalThis._etSubStoreDataCache = parsed;
-      return parsed;
+      dataFromDbFile = JSON.parse(content);
     } catch (e) {}
   }
 
-  // Fallback check in OS temp directory
-  const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
-  if (fs.existsSync(tmpFile)) {
+  // Use source with most up-to-date orders list
+  let chosen = dataFromTmp || dataFromDbFile;
+  if (dataFromTmp && dataFromDbFile) {
+    chosen = (dataFromTmp.orders?.length || 0) >= (dataFromDbFile.orders?.length || 0) ? dataFromTmp : dataFromDbFile;
+  }
+
+  if (chosen) {
+    globalThis._etSubStoreDataCache = chosen;
+    return chosen;
+  }
+
+  const dir = path.dirname(DB_FILE);
+  if (!fs.existsSync(dir)) {
     try {
-      const content = fs.readFileSync(tmpFile, 'utf-8');
-      const parsed = JSON.parse(content);
-      globalThis._etSubStoreDataCache = parsed;
-      return parsed;
+      fs.mkdirSync(dir, { recursive: true });
     } catch (e) {}
   }
 
@@ -371,14 +380,13 @@ function ensureDataFile(): DatabaseData {
 
 function saveData(data: DatabaseData): void {
   globalThis._etSubStoreDataCache = data;
+  const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
+  try {
+    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (e) {}
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (e) {
-    try {
-      const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
-      fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
-    } catch (err) {}
-  }
+  } catch (e) {}
 }
 
 export const prisma = {

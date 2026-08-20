@@ -23,6 +23,13 @@ function AdminOrdersContent() {
   const initialSearch = searchParams.get('search') || '';
 
   const [orders, setOrders] = useState<any[]>([]);
+  const [counts, setCounts] = useState<{ all: number; pending: number; verified: number; sending: number; sent: number }>({
+    all: 0,
+    pending: 0,
+    verified: 0,
+    sending: 0,
+    sent: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [selectedStatus, setSelectedStatus] = useState('ALL');
@@ -39,7 +46,11 @@ function AdminOrdersContent() {
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load orders');
+      
       setOrders(data.orders || []);
+      if (data.counts) {
+        setCounts(data.counts);
+      }
 
       // If initialSearch was provided, open the matching order modal automatically
       if (initialSearch && data.orders?.length > 0) {
@@ -63,11 +74,11 @@ function AdminOrdersContent() {
   };
 
   const statusFilters = [
-    { label: 'All Orders', value: 'ALL' },
-    { label: 'Pending', value: 'PENDING' },
-    { label: 'Processing', value: 'PROCESSING' },
-    { label: 'Delivered', value: 'DELIVERED' },
-    { label: 'Cancelled', value: 'CANCELLED' },
+    { label: 'All Orders', value: 'ALL', count: counts.all },
+    { label: 'Pending / Unverified', value: 'PENDING', count: counts.pending },
+    { label: 'Verified', value: 'VERIFIED', count: counts.verified },
+    { label: 'Sending', value: 'SENDING', count: counts.sending },
+    { label: 'Sent', value: 'SENT', count: counts.sent },
   ];
 
   return (
@@ -79,7 +90,7 @@ function AdminOrdersContent() {
         <button
           onClick={fetchOrders}
           disabled={loading}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all shadow-xs"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-google-blue' : 'text-gray-500'}`} />
           <span>Refresh</span>
@@ -116,13 +127,22 @@ function AdminOrdersContent() {
               <button
                 key={tab.value}
                 onClick={() => setSelectedStatus(tab.value)}
-                className={`px-3.5 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-colors ${
+                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold whitespace-nowrap transition-colors ${
                   selectedStatus === tab.value
                     ? 'bg-google-blue text-white shadow-xs'
                     : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                {tab.label}
+                <span>{tab.label}</span>
+                <span
+                  className={`px-2 py-0.5 text-[11px] rounded-full font-mono ${
+                    selectedStatus === tab.value
+                      ? 'bg-white/20 text-white'
+                      : 'bg-gray-200 text-gray-700'
+                  }`}
+                >
+                  {tab.count}
+                </span>
               </button>
             ))}
           </div>
@@ -140,7 +160,7 @@ function AdminOrdersContent() {
                   <th className="px-6 py-3.5">Product</th>
                   <th className="px-6 py-3.5">Amount</th>
                   <th className="px-6 py-3.5">Payment</th>
-                  <th className="px-6 py-3.5">Order Status</th>
+                  <th className="px-6 py-3.5">Order Category</th>
                   <th className="px-6 py-3.5">Telebirr Ref</th>
                   <th className="px-6 py-3.5">Date</th>
                   <th className="px-6 py-3.5 text-right">Actions</th>
@@ -156,7 +176,7 @@ function AdminOrdersContent() {
                 ) : orders.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
-                      No matching orders found.
+                      No matching orders found in this category.
                     </td>
                   </tr>
                 ) : (
@@ -207,10 +227,10 @@ function AdminOrdersContent() {
                       <td className="px-6 py-4 text-right whitespace-nowrap">
                         <button
                           onClick={() => setSelectedOrder(ord)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-google-blue hover:bg-google-blue-hover text-white rounded-lg font-bold shadow-xs transition-colors"
+                          className="inline-flex items-center gap-1 px-3.5 py-1.5 bg-google-blue hover:bg-google-blue-hover text-white rounded-xl font-bold shadow-xs transition-colors"
                         >
-                          <Send className="w-3 h-3" />
-                          <span>Fulfill</span>
+                          <Send className="w-3.5 h-3.5" />
+                          <span>{ord.orderStatus === 'DELIVERED' || ord.orderStatus === 'SENT' ? 'View / Edit' : 'Fulfill'}</span>
                         </button>
                       </td>
                     </tr>

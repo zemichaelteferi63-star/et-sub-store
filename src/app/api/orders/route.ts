@@ -97,33 +97,53 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search')?.trim() || '';
-    const status = searchParams.get('status')?.trim() || '';
+    const status = searchParams.get('status')?.trim() || 'ALL';
 
-    const where: any = {};
-
-    if (status && status !== 'ALL') {
-      where.orderStatus = status;
-    }
-
-    if (search) {
-      where.OR = [
-        { orderNumber: { contains: search } },
-        { customerName: { contains: search } },
-        { customerPhone: { contains: search } },
-        { customerTelegram: { contains: search } },
-        { transactionId: { contains: search } },
-      ];
-    }
-
-    const orders = await prisma.order.findMany({
-      where,
-      include: {
-        product: true,
-      },
+    // Get all orders first to calculate category counts reliably
+    const allOrders = await prisma.order.findMany({
+      include: { product: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json({ orders });
+    const counts = {
+      all: allOrders.length,
+      pending: allOrders.filter((o) => o.orderStatus === 'PENDING').length,
+      verified: allOrders.filter((o) => ['VERIFIED', 'PROCESSING'].includes(o.orderStatus)).length,
+      sending: allOrders.filter((o) => o.orderStatus === 'SENDING').length,
+      sent: allOrders.filter((o) => ['SENT', 'DELIVERED'].includes(o.orderStatus)).length,
+    };
+
+    let filtered = [...allOrders];
+
+    // Status filtering
+    if (status && status !== 'ALL') {
+      if (status === 'PENDING') {
+        filtered = filtered.filter((o) => o.orderStatus === 'PENDING');
+      } else if (status === 'VERIFIED') {
+        filtered = filtered.filter((o) => ['VERIFIED', 'PROCESSING'].includes(o.orderStatus));
+      } else if (status === 'SENDING') {
+        filtered = filtered.filter((o) => o.orderStatus === 'SENDING');
+      } else if (status === 'SENT') {
+        filtered = filtered.filter((o) => ['SENT', 'DELIVERED'].includes(o.orderStatus));
+      } else {
+        filtered = filtered.filter((o) => o.orderStatus === status);
+      }
+    }
+
+    // Search term filtering
+    if (search) {
+      const s = search.toLowerCase();
+      filtered = filtered.filter(
+        (o) =>
+          o.orderNumber.toLowerCase().includes(s) ||
+          o.customerName.toLowerCase().includes(s) ||
+          o.customerPhone.includes(s) ||
+          (o.customerTelegram && o.customerTelegram.toLowerCase().includes(s)) ||
+          (o.transactionId && o.transactionId.toLowerCase().includes(s))
+      );
+    }
+
+    return NextResponse.json({ orders: filtered, counts });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
