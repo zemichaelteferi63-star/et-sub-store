@@ -99,10 +99,6 @@ function saveLocalDiskOnly(data: DatabaseData): void {
 }
 
 function ensureDataFile(): DatabaseData {
-  if (globalThis._etSubStoreDataCache) {
-    return globalThis._etSubStoreDataCache;
-  }
-
   if (fs.existsSync(DB_FILE)) {
     try {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
