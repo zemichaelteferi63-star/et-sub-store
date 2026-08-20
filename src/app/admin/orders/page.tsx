@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AdminHeader from '@/components/AdminHeader';
 import OrderStatusBadge from '@/components/OrderStatusBadge';
@@ -9,76 +9,102 @@ import Toast from '@/components/Toast';
 import { formatETB, formatDate } from '@/lib/utils';
 import {
   Search,
-  Filter,
   RefreshCw,
-  Eye,
   Send,
-  CheckCircle2,
-  Phone,
-  MessageCircle,
+  ShoppingBag,
 } from 'lucide-react';
 
 function AdminOrdersContent() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get('search') || '';
 
-  const [orders, setOrders] = useState<any[]>([]);
-  const [counts, setCounts] = useState<{ all: number; pending: number; verified: number; sending: number; sent: number }>({
-    all: 0,
-    pending: 0,
-    verified: 0,
-    sending: 0,
-    sent: 0,
-  });
+  const [allOrders, setAllOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-  const fetchOrders = async () => {
-    setLoading(true);
+  const fetchOrders = async (isInitial = false) => {
+    if (isInitial) setLoading(true);
+    else setRefreshing(true);
+
     try {
-      let url = `/api/orders?search=${encodeURIComponent(searchTerm)}`;
-      if (selectedStatus !== 'ALL') {
-        url += `&status=${selectedStatus}`;
-      }
-      const res = await fetch(url);
+      const res = await fetch('/api/orders');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load orders');
-      
-      setOrders(data.orders || []);
-      if (data.counts) {
-        setCounts(data.counts);
-      }
 
-      // If initialSearch was provided, open the matching order modal automatically
-      if (initialSearch && data.orders?.length > 0) {
-        const exact = data.orders.find((o: any) => o.orderNumber === initialSearch);
+      const fetched = data.orders || [];
+      setAllOrders(fetched);
+
+      // Auto-open modal if search param exists
+      if (initialSearch && fetched.length > 0) {
+        const exact = fetched.find((o: any) => o.orderNumber === initialSearch);
         if (exact) setSelectedOrder(exact);
       }
     } catch (err: any) {
       setToast({ message: err.message, type: 'error' });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchOrders();
-  }, [selectedStatus]);
+    fetchOrders(true);
+  }, []);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchOrders();
-  };
+  // Calculate counts dynamically from allOrders
+  const counts = useMemo(() => {
+    return {
+      all: allOrders.length,
+      pending: allOrders.filter((o) => o.orderStatus === 'PENDING').length,
+      verified: allOrders.filter((o) => ['VERIFIED', 'PROCESSING'].includes(o.orderStatus)).length,
+      sending: allOrders.filter((o) => o.orderStatus === 'SENDING').length,
+      sent: allOrders.filter((o) => ['SENT', 'DELIVERED'].includes(o.orderStatus)).length,
+    };
+  }, [allOrders]);
+
+  // Filter orders instantly in memory without network delay or flickering
+  const filteredOrders = useMemo(() => {
+    let result = [...allOrders];
+
+    if (selectedStatus !== 'ALL') {
+      if (selectedStatus === 'PENDING') {
+        result = result.filter((o) => o.orderStatus === 'PENDING');
+      } else if (selectedStatus === 'VERIFIED') {
+        result = result.filter((o) => ['VERIFIED', 'PROCESSING'].includes(o.orderStatus));
+      } else if (selectedStatus === 'SENDING') {
+        result = result.filter((o) => o.orderStatus === 'SENDING');
+      } else if (selectedStatus === 'SENT') {
+        result = result.filter((o) => ['SENT', 'DELIVERED'].includes(o.orderStatus));
+      } else {
+        result = result.filter((o) => o.orderStatus === selectedStatus);
+      }
+    }
+
+    if (searchTerm.trim()) {
+      const s = searchTerm.trim().toLowerCase();
+      result = result.filter(
+        (o) =>
+          o.orderNumber?.toLowerCase().includes(s) ||
+          o.customerName?.toLowerCase().includes(s) ||
+          o.customerPhone?.includes(s) ||
+          (o.customerTelegram && o.customerTelegram.toLowerCase().includes(s)) ||
+          (o.transactionId && o.transactionId.toLowerCase().includes(s))
+      );
+    }
+
+    return result;
+  }, [allOrders, selectedStatus, searchTerm]);
 
   const statusFilters = [
     { label: 'All Orders', value: 'ALL', count: counts.all },
     { label: 'Pending / Unverified', value: 'PENDING', count: counts.pending },
     { label: 'Verified', value: 'VERIFIED', count: counts.verified },
     { label: 'Sending', value: 'SENDING', count: counts.sending },
-    { label: 'Sent', value: 'SENT', count: counts.sent },
+    { label: 'Sent & Delivered', value: 'SENT', count: counts.sent },
   ];
 
   return (
@@ -88,12 +114,12 @@ function AdminOrdersContent() {
         subtitle="Manage customer orders, verify Telebirr payments, and deliver supplier activation links."
       >
         <button
-          onClick={fetchOrders}
-          disabled={loading}
+          onClick={() => fetchOrders(false)}
+          disabled={refreshing}
           className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all shadow-xs"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-google-blue' : 'text-gray-500'}`} />
-          <span>Refresh</span>
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-google-blue' : 'text-gray-500'}`} />
+          <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
         </button>
       </AdminHeader>
 
@@ -102,7 +128,7 @@ function AdminOrdersContent() {
         {/* Controls: Search Bar & Status Filter Tabs */}
         <div className="bg-white rounded-3xl p-5 border border-gray-200 shadow-google-sm space-y-4">
           
-          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="relative flex-1 w-full">
               <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
@@ -113,13 +139,16 @@ function AdminOrdersContent() {
                 className="w-full pl-10 pr-4 py-2.5 text-xs border border-gray-300 rounded-xl focus:ring-2 focus:ring-google-blue focus:border-google-blue"
               />
             </div>
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-5 py-2.5 bg-google-blue hover:bg-google-blue-hover text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
-            >
-              Search
-            </button>
-          </form>
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="text-xs font-bold text-gray-500 hover:text-gray-900 px-3 py-2 bg-gray-100 rounded-xl"
+              >
+                Clear Search
+              </button>
+            )}
+          </div>
 
           {/* Status Filter Buttons */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 border-t border-gray-100 pt-3 text-xs">
@@ -160,27 +189,34 @@ function AdminOrdersContent() {
                   <th className="px-6 py-3.5">Product</th>
                   <th className="px-6 py-3.5">Amount</th>
                   <th className="px-6 py-3.5">Payment</th>
-                  <th className="px-6 py-3.5">Order Category</th>
+                  <th className="px-6 py-3.5">Order Status</th>
                   <th className="px-6 py-3.5">Telebirr Ref</th>
                   <th className="px-6 py-3.5">Date</th>
                   <th className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {loading && orders.length === 0 ? (
+                {loading ? (
                   <tr>
                     <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
-                      Loading orders...
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-6 h-6 border-2 border-google-blue border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading orders...</span>
+                      </div>
                     </td>
                   </tr>
-                ) : orders.length === 0 ? (
+                ) : filteredOrders.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
-                      No matching orders found in this category.
+                      <div className="flex flex-col items-center gap-2">
+                        <ShoppingBag className="w-8 h-8 text-gray-300" />
+                        <span className="font-semibold text-gray-600">No orders recorded in this filter.</span>
+                        <p className="text-xs text-gray-400">Orders submitted by customers via Telebirr checkout will automatically appear here.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
-                  orders.map((ord) => (
+                  filteredOrders.map((ord) => (
                     <tr key={ord.id} className="hover:bg-gray-50/80 transition-colors">
                       <td className="px-6 py-4 font-mono font-bold text-gray-900">
                         #{ord.orderNumber}
@@ -249,7 +285,7 @@ function AdminOrdersContent() {
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onRefresh={() => {
-            fetchOrders();
+            fetchOrders(false);
             setSelectedOrder(null);
           }}
           onShowToast={(msg, type) => setToast({ message: msg, type: type || 'success' })}

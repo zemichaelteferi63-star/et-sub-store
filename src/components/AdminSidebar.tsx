@@ -57,11 +57,6 @@ export default function AdminSidebar({
       href: '/admin/settings',
       icon: <Settings className="w-4 h-4" />,
     },
-    {
-      name: 'Audit Logs',
-      href: '/admin/logs',
-      icon: <History className="w-4 h-4" />,
-    },
   ];
 
   return (

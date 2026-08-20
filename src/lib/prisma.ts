@@ -91,75 +91,34 @@ async function syncFromCloudIfNeeded(): Promise<DatabaseData> {
 
 function saveLocalDiskOnly(data: DatabaseData): void {
   globalThis._etSubStoreDataCache = data;
-  const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
-  try {
-    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (e) {}
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (e) {}
+  } catch (e) {
+    console.error('Error writing DB_FILE:', e);
+  }
 }
 
 function ensureDataFile(): DatabaseData {
-  const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
-  let dataFromTmp: DatabaseData | null = null;
-  let dataFromDbFile: DatabaseData | null = null;
-
-  if (fs.existsSync(tmpFile)) {
-    try {
-      const content = fs.readFileSync(tmpFile, 'utf-8');
-      dataFromTmp = JSON.parse(content);
-    } catch (e) {}
+  if (globalThis._etSubStoreDataCache) {
+    return globalThis._etSubStoreDataCache;
   }
 
   if (fs.existsSync(DB_FILE)) {
     try {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
-      dataFromDbFile = JSON.parse(content);
-    } catch (e) {}
-  }
-
-  // Merge orders from both files to ensure NO order is ever lost
-  let chosen: DatabaseData | null = null;
-  if (dataFromTmp || dataFromDbFile) {
-    const base = dataFromDbFile || dataFromTmp!;
-    const ordersMap = new Map<string, OrderModel>();
-
-    if (dataFromDbFile?.orders) {
-      for (const o of dataFromDbFile.orders) {
-        ordersMap.set((o.orderNumber || o.id).toUpperCase(), o);
-      }
-    }
-    if (dataFromTmp?.orders) {
-      for (const o of dataFromTmp.orders) {
-        const key = (o.orderNumber || o.id).toUpperCase();
-        if (!ordersMap.has(key)) {
-          ordersMap.set(key, o);
-        } else {
-          // Keep newer updated order status
-          const existing = ordersMap.get(key)!;
-          if (new Date(o.updatedAt).getTime() > new Date(existing.updatedAt).getTime()) {
-            ordersMap.set(key, o);
-          }
+      const data: DatabaseData = JSON.parse(content);
+      if (data.settings) {
+        for (const s of data.settings) {
+          if (s.key === 'supportPhone' && s.value === '0988798834') s.value = '0996976737';
+          if (s.key === 'telebirrReceiverPhone' && s.value === '0988798834') s.value = '0996976737';
+          if (s.key === 'telebirrReceiverName' && s.value === 'ET-Sub Store AI Services') s.value = 'Ze Michael';
         }
       }
+      globalThis._etSubStoreDataCache = data;
+      return data;
+    } catch (e) {
+      console.error('Error reading DB_FILE:', e);
     }
-
-    base.orders = Array.from(ordersMap.values());
-    chosen = base;
-  }
-
-  if (chosen) {
-    // Ensure settings fallbacks match current configuration
-    if (chosen.settings) {
-      for (const s of chosen.settings) {
-        if (s.key === 'supportPhone' && s.value === '0988798834') s.value = '0996976737';
-        if (s.key === 'telebirrReceiverPhone' && s.value === '0988798834') s.value = '0996976737';
-        if (s.key === 'telebirrReceiverName' && s.value === 'ET-Sub Store AI Services') s.value = 'Ze Michael';
-      }
-    }
-    globalThis._etSubStoreDataCache = chosen;
-    return chosen;
   }
 
   const dir = path.dirname(DB_FILE);
