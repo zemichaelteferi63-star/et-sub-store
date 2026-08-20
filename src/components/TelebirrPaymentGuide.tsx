@@ -37,6 +37,9 @@ export default function TelebirrPaymentGuide({
               src="/telebirr-logo.jpg" 
               alt="Telebirr Logo" 
               className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.ctfassets.net/r8cm1n1mpqev/2yHoEHDIDuF1BLzXVqo1Uz/e6a1c5a0c8599da014d51e8b0ab48167/photo_2021-05-10_22-48-53-telebirr_icon.jpg?w=800&q=50';
+              }}
             />
           </div>
           <div>
