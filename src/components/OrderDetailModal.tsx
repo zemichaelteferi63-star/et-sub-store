@@ -187,15 +187,14 @@ export default function OrderDetailModal({
                 <span>{order.customerPhone}</span>
               </div>
 
-              {/* Visual Telegram Badge (Section 10) */}
               <div className="pt-1">
                 {hasTelegram ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-mono">
-                    🟢 Telegram provided (@{order.customerTelegram.replace('@', '')})
+                  <span className="inline-block font-mono text-xs text-gray-700 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200">
+                    @{order.customerTelegram.replace('@', '')}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 font-mono">
-                    ⚪ Telegram not provided
+                  <span className="inline-block font-mono text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
+                    Telegram not provided
                   </span>
                 )}
               </div>
@@ -207,7 +206,7 @@ export default function OrderDetailModal({
                 Order & Payment
               </span>
               <div className="font-bold text-gray-900 text-sm">
-                {order.product?.nameEn || 'Gemini AI Pro'}
+                {order.product?.nameEn || order.productId}
               </div>
               <div className="flex items-center justify-between text-gray-600">
                 <span>Amount:</span>

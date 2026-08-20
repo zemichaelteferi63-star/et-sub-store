@@ -170,18 +170,18 @@ function AdminOrdersContent() {
                         <div className="flex flex-col gap-1 text-gray-500 text-[11px] font-mono mt-1">
                           <span>📞 {ord.customerPhone}</span>
                           {ord.customerTelegram ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                              🟢 Telegram provided (@{ord.customerTelegram.replace('@', '')})
+                            <span className="inline-block font-mono text-xs text-gray-700 bg-gray-100 px-2 py-0.5 rounded border border-gray-200 w-fit">
+                              @{ord.customerTelegram.replace('@', '')}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
-                              ⚪ Telegram not provided
+                            <span className="text-gray-400 text-[11px]">
+                              No Telegram
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-medium text-gray-700">
-                        {ord.product?.nameEn || 'Gemini AI Pro'}
+                      <td className="px-6 py-4 font-medium text-gray-800">
+                        {ord.product?.nameEn || ord.productId}
                       </td>
                       <td className="px-6 py-4 font-mono font-black text-gray-900">
                         {formatETB(ord.amountETB)}

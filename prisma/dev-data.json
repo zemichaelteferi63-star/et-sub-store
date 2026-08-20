@@ -154,6 +154,44 @@
   ],
   "orders": [
     {
+      "id": "ord-1787213748445-265",
+      "orderNumber": "ETS-QJAQX4",
+      "accessToken": "tjXcTGbWecyFUIh8u9hC0w8jSTQ64uk3",
+      "customerName": "Tigist Alemu",
+      "customerPhone": "+251911998877",
+      "customerTelegram": null,
+      "productId": "prod-gemini-18m",
+      "amountETB": 350,
+      "currency": "ETB",
+      "paymentMethod": "TELEBIRR",
+      "transactionId": "TB55443322",
+      "paymentStatus": "PAID",
+      "orderStatus": "DELIVERED",
+      "createdAt": "2026-08-20T08:15:48.445Z",
+      "updatedAt": "2026-08-20T08:15:49.466Z",
+      "activationLink": "https://one.google.com/invitation/gemini-18m-ethiopia-redeem-key-9922",
+      "deliveredAt": "2026-08-20T08:15:49.451Z",
+      "deliveredBy": "admin@ethiogemini.com",
+      "adminNotes": "Released activation link for customer without Telegram handle."
+    },
+    {
+      "id": "ord-1787213747696-530",
+      "orderNumber": "ETS-MNML78",
+      "accessToken": "cgT2DiKapE4qNUpNHMiBZlLAnJLhx2Ru",
+      "customerName": "Abebe Kebede",
+      "customerPhone": "+251988788834",
+      "customerTelegram": "@AbebeAI",
+      "productId": "prod-gemini-18m",
+      "amountETB": 350,
+      "currency": "ETB",
+      "paymentMethod": "TELEBIRR",
+      "transactionId": "TB77889911",
+      "paymentStatus": "PAYMENT_PROCESSING",
+      "orderStatus": "PENDING",
+      "createdAt": "2026-08-20T08:15:47.696Z",
+      "updatedAt": "2026-08-20T08:15:47.696Z"
+    },
+    {
       "id": "ord-1787211362409-945",
       "orderNumber": "ETS-CWAH2G",
       "accessToken": "tzN1MdeJ8Etb49JhH94unCfG9ydMznMo",
@@ -270,6 +308,37 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "log-1787213749483-189",
+      "orderId": "ord-1787213748445-265",
+      "action": "ACTIVATION_DELIVERED",
+      "details": "Activation link delivered to customer by admin (admin@ethiogemini.com)",
+      "performedBy": "admin@ethiogemini.com",
+      "createdAt": "2026-08-20T08:15:49.483Z"
+    },
+    {
+      "id": "log-1787213749416-557",
+      "action": "ADMIN_LOGIN",
+      "details": "Admin admin@ethiogemini.com logged in successfully",
+      "performedBy": "admin@ethiogemini.com",
+      "createdAt": "2026-08-20T08:15:49.416Z"
+    },
+    {
+      "id": "log-1787213748472-568",
+      "orderId": "ord-1787213748445-265",
+      "action": "ORDER_CREATED",
+      "details": "Order #ETS-QJAQX4 created for Tigist Alemu (Gemini AI Pro, 350 ETB). Telebirr Ref: TB55443322",
+      "performedBy": "CUSTOMER",
+      "createdAt": "2026-08-20T08:15:48.472Z"
+    },
+    {
+      "id": "log-1787213747715-990",
+      "orderId": "ord-1787213747696-530",
+      "action": "ORDER_CREATED",
+      "details": "Order #ETS-MNML78 created for Abebe Kebede (Gemini AI Pro, 350 ETB). Telebirr Ref: TB77889911",
+      "performedBy": "CUSTOMER",
+      "createdAt": "2026-08-20T08:15:47.715Z"
+    },
     {
       "id": "log-1787211362960-340",
       "orderId": "ord-1787211362409-945",
