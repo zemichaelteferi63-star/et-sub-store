@@ -86,10 +86,6 @@ declare global {
 }
 
 function ensureDataFile(): DatabaseData {
-  if (globalThis._etSubStoreDataCache) {
-    return globalThis._etSubStoreDataCache;
-  }
-
   const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
   let dataFromTmp: DatabaseData | null = null;
   let dataFromDbFile: DatabaseData | null = null;
@@ -108,10 +104,34 @@ function ensureDataFile(): DatabaseData {
     } catch (e) {}
   }
 
-  // Use source with most up-to-date orders list
-  let chosen = dataFromTmp || dataFromDbFile;
-  if (dataFromTmp && dataFromDbFile) {
-    chosen = (dataFromTmp.orders?.length || 0) >= (dataFromDbFile.orders?.length || 0) ? dataFromTmp : dataFromDbFile;
+  // Merge orders from both files to ensure NO order is ever lost
+  let chosen: DatabaseData | null = null;
+  if (dataFromTmp || dataFromDbFile) {
+    const base = dataFromDbFile || dataFromTmp!;
+    const ordersMap = new Map<string, OrderModel>();
+
+    if (dataFromDbFile?.orders) {
+      for (const o of dataFromDbFile.orders) {
+        ordersMap.set((o.orderNumber || o.id).toUpperCase(), o);
+      }
+    }
+    if (dataFromTmp?.orders) {
+      for (const o of dataFromTmp.orders) {
+        const key = (o.orderNumber || o.id).toUpperCase();
+        if (!ordersMap.has(key)) {
+          ordersMap.set(key, o);
+        } else {
+          // Keep newer updated order status
+          const existing = ordersMap.get(key)!;
+          if (new Date(o.updatedAt).getTime() > new Date(existing.updatedAt).getTime()) {
+            ordersMap.set(key, o);
+          }
+        }
+      }
+    }
+
+    base.orders = Array.from(ordersMap.values());
+    chosen = base;
   }
 
   if (chosen) {
