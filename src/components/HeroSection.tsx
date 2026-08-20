@@ -138,8 +138,13 @@ export default function HeroSection() {
                   </span>
                   <span className="font-bold text-gray-900 text-sm">Telebirr (350 ETB)</span>
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-telebirr text-white flex items-center justify-center text-xs font-bold shadow-xs">
-                  tb
+                <div className="w-8 h-8 rounded-lg overflow-hidden bg-white border border-gray-200 flex items-center justify-center shadow-xs shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img 
+                    src="/telebirr-logo.jpg" 
+                    alt="Telebirr Logo" 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 

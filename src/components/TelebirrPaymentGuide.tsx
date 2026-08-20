@@ -31,8 +31,13 @@ export default function TelebirrPaymentGuide({
       {/* Telebirr Header */}
       <div className="flex items-center justify-between border-b border-blue-100 pb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-telebirr flex items-center justify-center text-white font-bold text-base shadow-sm">
-            tb
+          <div className="w-10 h-10 rounded-xl overflow-hidden bg-white border border-gray-200 flex items-center justify-center shadow-xs shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              src="/telebirr-logo.jpg" 
+              alt="Telebirr Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <div>
             <h3 className="font-bold text-gray-900 text-base">
