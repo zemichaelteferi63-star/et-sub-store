@@ -89,7 +89,7 @@ let activeCloudObjectId = 'ethio_gemini_store_prod_v2_zemichael_0996976737';
 let lastCloudSyncTime = 0;
 
 function getCloudUrl(): string {
-  return `https://api.restful-api.dev/objects/${activeCloudObjectId}`;
+  return process.env.PERSISTENT_DB_URL || `https://api.restful-api.dev/objects/${activeCloudObjectId}`;
 }
 
 async function syncFromCloudIfNeeded(): Promise<DatabaseData> {
@@ -99,7 +99,7 @@ async function syncFromCloudIfNeeded(): Promise<DatabaseData> {
     lastCloudSyncTime = now;
     try {
       let res = await fetch(getCloudUrl(), { cache: 'no-store' });
-      if (res.status === 404) {
+      if (res.status === 404 && localData.orders.length > 0) {
         const createRes = await fetch('https://api.restful-api.dev/objects', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -111,19 +111,20 @@ async function syncFromCloudIfNeeded(): Promise<DatabaseData> {
         }
       } else if (res.ok) {
         const body = await res.json();
-        if (body.data?.orders && Array.isArray(body.data.orders)) {
+        const cloudOrders = body.data?.orders || body.orders;
+        if (cloudOrders && Array.isArray(cloudOrders)) {
           const ordersMap = new Map<string, OrderModel>();
           for (const o of localData.orders) {
             if (o?.orderNumber) ordersMap.set((o.orderNumber || o.id).toUpperCase(), o);
           }
-          for (const o of body.data.orders) {
+          for (const o of cloudOrders) {
             if (!o?.orderNumber) continue;
             const key = (o.orderNumber || o.id).toUpperCase();
             if (!ordersMap.has(key)) {
               ordersMap.set(key, o);
             } else {
               const existing = ordersMap.get(key)!;
-              if (new Date(o.updatedAt).getTime() > new Date(existing.updatedAt).getTime()) {
+              if (new Date(o.updatedAt).getTime() >= new Date(existing.updatedAt).getTime()) {
                 ordersMap.set(key, o);
               }
             }
