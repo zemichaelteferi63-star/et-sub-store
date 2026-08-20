@@ -267,7 +267,7 @@ function CheckoutContent() {
             <TelebirrPaymentGuide
               amountETB={selectedProduct.priceETB}
               receiverName={settings?.telebirrReceiverName || 'ET-Sub Store AI Services'}
-              receiverPhone={settings?.telebirrReceiverPhone || '+251988788834'}
+              receiverPhone={settings?.telebirrReceiverPhone || '0988798834'}
               qrUrl={settings?.telebirrQrUrl}
             />
           )}
