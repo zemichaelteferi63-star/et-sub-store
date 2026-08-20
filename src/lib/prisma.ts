@@ -454,13 +454,17 @@ function ensureDataFile(): DatabaseData {
   return initialData;
 }
 
-function saveData(data: DatabaseData): void {
+async function saveData(data: DatabaseData): Promise<void> {
   saveLocalDiskOnly(data);
-  fetch(CLOUD_DB_URL, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'ethio_gemini_db', data }),
-  }).catch(() => {});
+  try {
+    await fetch(CLOUD_DB_URL, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'ethio_gemini_db', data }),
+    });
+  } catch (e) {
+    console.error('Cloud DB sync error:', e);
+  }
 }
 
 export const prisma = {
@@ -691,7 +695,7 @@ export const prisma = {
         updatedAt: new Date(),
       };
       data.orders.unshift(newOrder);
-      saveData(data);
+      await saveData(data);
 
       if (include?.product) {
         return {
@@ -717,7 +721,7 @@ export const prisma = {
         ...payload,
         updatedAt: new Date(),
       };
-      saveData(data);
+      await saveData(data);
 
       if (include?.product) {
         return {
@@ -728,7 +732,7 @@ export const prisma = {
       return data.orders[idx];
     },
     count: async (args?: { where?: any }) => {
-      const data = ensureDataFile();
+      const data = await syncFromCloudIfNeeded();
       let list = data.orders;
       if (args?.where?.orderStatus) {
         if (typeof args.where.orderStatus === 'object' && args.where.orderStatus.in) {
@@ -743,7 +747,7 @@ export const prisma = {
       return list.length;
     },
     aggregate: async ({ _sum, where }: { _sum: { amountETB: boolean }; where?: any }) => {
-      const data = ensureDataFile();
+      const data = await syncFromCloudIfNeeded();
       let list = data.orders;
       if (where?.paymentStatus) {
         list = list.filter((o) => o.paymentStatus === where.paymentStatus);
@@ -766,7 +770,7 @@ export const prisma = {
           ...update,
           updatedAt: new Date(),
         };
-        saveData(data);
+        await saveData(data);
         return data.settings[idx];
       } else {
         const newSetting: SettingModel = {
@@ -775,7 +779,7 @@ export const prisma = {
           updatedAt: new Date(),
         };
         data.settings.push(newSetting);
-        saveData(data);
+        await saveData(data);
         return newSetting;
       }
     },
@@ -789,7 +793,7 @@ export const prisma = {
         createdAt: new Date(),
       };
       data.auditLogs.unshift(newLog);
-      saveData(data);
+      await saveData(data);
       return newLog;
     },
     findMany: async (args?: { take?: number; orderBy?: any; include?: any }) => {
