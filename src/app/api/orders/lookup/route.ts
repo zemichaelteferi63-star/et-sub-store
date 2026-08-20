@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code')?.trim().toUpperCase();
+    const rawCode = searchParams.get('code');
+    const code = typeof rawCode === 'string' ? rawCode.trim().toUpperCase() : '';
 
     if (!code) {
       return NextResponse.json({ error: 'Tracking code is required' }, { status: 400 });

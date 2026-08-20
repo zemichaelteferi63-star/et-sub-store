@@ -701,13 +701,13 @@ export const prisma = {
     },
     findUnique: async ({ where, include }: { where: { orderNumber?: string; id?: string }; include?: any }) => {
       const data = await syncFromCloudIfNeeded();
-      const targetOrderNum = where.orderNumber ? where.orderNumber.trim().toUpperCase() : null;
-      const targetId = where.id ? where.id.trim() : null;
+      const targetOrderNum = typeof where.orderNumber === 'string' ? where.orderNumber.trim().toUpperCase() : null;
+      const targetId = typeof where.id === 'string' ? where.id.trim() : null;
 
       const order = data.orders.find(
         (o) =>
-          (targetOrderNum && o.orderNumber.trim().toUpperCase() === targetOrderNum) ||
-          (targetId && o.id === targetId)
+          (targetOrderNum && typeof o.orderNumber === 'string' && o.orderNumber.trim().toUpperCase() === targetOrderNum) ||
+          (targetId && o.id && (o.id === targetId || String(o.id).trim() === targetId))
       );
       if (!order) return null;
 
@@ -740,13 +740,13 @@ export const prisma = {
     },
     update: async ({ where, data: payload, include }: { where: { orderNumber?: string; id?: string }; data: any; include?: any }) => {
       const data = await syncFromCloudIfNeeded();
-      const targetOrderNum = where.orderNumber ? where.orderNumber.trim().toUpperCase() : null;
-      const targetId = where.id ? where.id.trim() : null;
+      const targetOrderNum = typeof where.orderNumber === 'string' ? where.orderNumber.trim().toUpperCase() : null;
+      const targetId = typeof where.id === 'string' ? where.id.trim() : null;
 
       const idx = data.orders.findIndex(
         (o) =>
-          (targetOrderNum && o.orderNumber.trim().toUpperCase() === targetOrderNum) ||
-          (targetId && o.id === targetId)
+          (targetOrderNum && typeof o.orderNumber === 'string' && o.orderNumber.trim().toUpperCase() === targetOrderNum) ||
+          (targetId && o.id && (o.id === targetId || String(o.id).trim() === targetId))
       );
       if (idx === -1) throw new Error('Order not found');
       data.orders[idx] = {

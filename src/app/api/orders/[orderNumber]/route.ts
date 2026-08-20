@@ -7,7 +7,8 @@ export async function GET(
   { params }: { params: { orderNumber: string } }
 ) {
   try {
-    const cleanOrderNumber = params.orderNumber?.trim().toUpperCase();
+    const rawOrderNum = params?.orderNumber;
+    const cleanOrderNumber = typeof rawOrderNum === 'string' ? rawOrderNum.trim().toUpperCase() : '';
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
 
