@@ -1,5 +1,4 @@
 import React from 'react';
-import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { getAdminSession } from '@/lib/auth';
 import prisma from '@/lib/prisma';
@@ -12,11 +11,15 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getAdminSession();
   const headersList = headers();
   const pathname = headersList.get('x-pathname') || '';
 
-  // Allow login page through without redirect loop
+  // Never render sidebar on the login page
+  if (pathname === '/admin/login') {
+    return <>{children}</>;
+  }
+
+  const session = await getAdminSession();
   if (!session) {
     return <>{children}</>;
   }

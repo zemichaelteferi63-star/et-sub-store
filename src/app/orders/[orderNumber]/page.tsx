@@ -26,6 +26,7 @@ import {
   Info,
   Globe,
   Hourglass,
+  Send,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -223,7 +224,6 @@ function OrderTrackerContent() {
     );
   }
 
-  const isPaid = order.paymentStatus === 'PAID';
   const isDelivered = order.orderStatus === 'DELIVERED' && !!order.activationLink;
 
   return (
@@ -410,45 +410,84 @@ function OrderTrackerContent() {
             </div>
           </div>
         </div>
-      ) : isPaid ? (
-        /* PAYMENT VERIFIED - PREPARING LINK */
-        <div className="bg-blue-50/70 border border-blue-200 rounded-3xl p-7 sm:p-10 text-center space-y-5">
-          <div className="w-14 h-14 rounded-2xl bg-google-blue text-white flex items-center justify-center mx-auto shadow-md">
-            <Clock className="w-7 h-7 animate-pulse" />
-          </div>
-          <div className="space-y-2 max-w-lg mx-auto">
-            <h3 className="font-display text-2xl font-bold text-gray-900">
-              {t.order.paymentVerifiedTitle}
-            </h3>
-            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-              {t.order.waitingDeliverySubtitle}
-            </p>
-          </div>
-
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-blue-200 text-xs font-semibold text-google-blue">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            <span>Auto-refreshing status every 10 seconds...</span>
-          </div>
-        </div>
       ) : (
-        /* PAYMENT UNDER VERIFICATION */
-        <div className="bg-amber-50/80 border border-amber-200 rounded-3xl p-7 sm:p-10 text-center space-y-5">
-          <div className="w-14 h-14 rounded-2xl bg-amber-500 text-white flex items-center justify-center mx-auto shadow-md">
-            <Clock className="w-7 h-7" />
-          </div>
-          <div className="space-y-2 max-w-lg mx-auto">
-            <h3 className="font-display text-2xl font-bold text-gray-900">
-              {t.order.paymentUnderVerificationTitle}
-            </h3>
-            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-              {t.order.paymentUnderVerificationSubtitle}
+        /* PAYMENT SUBMITTED & PROCESSING SCREEN */
+        <div className="bg-white rounded-3xl p-7 sm:p-10 border-2 border-google-blue/40 shadow-google-lg space-y-8 animate-slide-up">
+          
+          <div className="text-center space-y-3">
+            <div className="w-16 h-16 rounded-3xl bg-blue-50 text-google-blue flex items-center justify-center mx-auto shadow-sm ring-4 ring-blue-100">
+              <CheckCircle2 className="w-9 h-9 stroke-[2.5]" />
+            </div>
+
+            <h2 className="font-display font-black text-2xl sm:text-3xl text-gray-900 tracking-tight">
+              {t.order.paymentVerifiedHeader}
+            </h2>
+
+            <p className="text-sm font-bold text-google-blue bg-blue-50 inline-block px-4 py-1.5 rounded-full border border-blue-200">
+              {t.order.paymentVerifiedNotice}
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-amber-200 text-xs font-semibold text-amber-800">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-            <span>Verifying payment... Auto-refreshing</span>
+          <div className="bg-gradient-to-r from-blue-50 via-indigo-50/50 to-blue-50 p-6 rounded-2xl border border-blue-100 space-y-4">
+            
+            {/* 0-30 Minute Processing Message */}
+            <div className="flex items-start gap-3">
+              <Clock className="w-5 h-5 text-google-blue shrink-0 mt-0.5" />
+              <div className="space-y-1 text-xs sm:text-sm">
+                <span className="font-bold text-gray-900 block">
+                  {t.order.orderProcessingNotice}
+                </span>
+                <p className="text-gray-700 font-medium leading-relaxed">
+                  {t.order.estimatedTimeNotice}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-blue-200/60 pt-4 space-y-3">
+              
+              {/* Telegram Notice */}
+              {order.customerTelegram ? (
+                <div className="bg-white p-4 rounded-xl border border-blue-200 space-y-2 text-xs">
+                  <div className="flex items-center gap-2 text-google-blue font-bold text-sm">
+                    <Send className="w-4 h-4" />
+                    <span>📲 CHECK TELEGRAM!</span>
+                  </div>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    {t.order.checkTelegramNotice}
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white p-4 rounded-xl border border-gray-200 space-y-2 text-xs">
+                  <div className="flex items-center gap-2 text-amber-700 font-bold text-sm">
+                    <Info className="w-4 h-4" />
+                    <span>💡 No Telegram Username Provided</span>
+                  </div>
+                  <p className="text-gray-600 leading-relaxed whitespace-pre-line">
+                    {t.order.noTelegramNotice}
+                  </p>
+                  <p className="text-[11px] text-gray-500 pt-1">
+                    {t.order.telegramUnavailableNotice}
+                  </p>
+                </div>
+              )}
+
+            </div>
           </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-gray-50 border border-gray-200 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-google-blue animate-spin shrink-0" />
+              <span>Auto-refreshing status... You can return to this page anytime using your tracking code.</span>
+            </div>
+            <button
+              onClick={() => fetchOrder(true)}
+              disabled={refreshing}
+              className="px-4 py-2 bg-google-blue text-white rounded-xl font-bold hover:bg-google-blue-hover transition-colors shrink-0"
+            >
+              {t.order.refreshStatus}
+            </button>
+          </div>
+
         </div>
       )}
 
@@ -464,9 +503,19 @@ function OrderTrackerContent() {
               Customer
             </span>
             <span className="font-bold text-gray-900 text-sm block">{order.customerName}</span>
-            <span className="font-mono text-gray-600">{order.customerPhone}</span>
-            {order.customerTelegram && (
-              <span className="text-google-blue font-mono block">@{order.customerTelegram.replace('@', '')}</span>
+            <span className="font-mono text-gray-600 block">{order.customerPhone}</span>
+            {order.customerTelegram ? (
+              <div className="pt-1">
+                <span className="inline-block font-mono text-xs text-gray-700 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200">
+                  @{order.customerTelegram.replace('@', '')}
+                </span>
+              </div>
+            ) : (
+              <div className="pt-1">
+                <span className="inline-block font-mono text-xs text-gray-500 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
+                  Telegram not provided
+                </span>
+              </div>
             )}
           </div>
 

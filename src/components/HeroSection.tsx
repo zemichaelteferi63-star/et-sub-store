@@ -8,6 +8,14 @@ import { Sparkles, ArrowRight, ShieldCheck, Zap, MessageCircle, CheckCircle, Bot
 export default function HeroSection() {
   const { t, isAmharic } = useLanguage();
 
+  const handleScrollToGemini = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const el = document.getElementById('gemini-pro');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   return (
     <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28">
       {/* Background Subtle Google Gradient Accents */}
@@ -46,7 +54,8 @@ export default function HeroSection() {
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
               <a
                 href="#gemini-pro"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 text-base font-bold text-white bg-google-blue hover:bg-google-blue-hover rounded-2xl shadow-google-md hover:shadow-google-lg transition-all duration-200 group"
+                onClick={handleScrollToGemini}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 text-base font-bold text-white bg-google-blue hover:bg-google-blue-hover rounded-2xl shadow-google-md hover:shadow-google-lg transition-all duration-200 group cursor-pointer"
               >
                 <span>{t.hero.ctaBuy}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

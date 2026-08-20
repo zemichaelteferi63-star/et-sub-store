@@ -37,6 +37,7 @@ export default function OrderDetailModal({
   const [adminNotes, setAdminNotes] = useState(order.adminNotes || '');
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showConfirmRelease, setShowConfirmRelease] = useState(false);
 
   // 1. Verify Payment Action
   const handleVerifyPayment = async () => {
@@ -57,14 +58,16 @@ export default function OrderDetailModal({
     }
   };
 
-  // 2. Deliver Activation Link
-  const handleDeliver = async () => {
+  // 2. Deliver / Release Activation Link
+  const handleConfirmDeliver = async () => {
     if (!activationLink.trim()) {
-      onShowToast('Please paste a valid activation link or code before delivering', 'error');
+      onShowToast('Please paste a valid activation link or code before releasing', 'error');
       return;
     }
 
     setLoadingAction('deliver');
+    setShowConfirmRelease(false);
+
     try {
       const res = await fetch(`/api/orders/${order.orderNumber}/deliver`, {
         method: 'POST',
@@ -77,7 +80,11 @@ export default function OrderDetailModal({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to deliver activation link');
 
-      onShowToast('Activation link delivered successfully! Customer notified.', 'success');
+      const telegramMsg = order.customerTelegram
+        ? 'Activation released & Telegram notification sent to customer!'
+        : 'Activation released successfully! Available on customer tracking page.';
+
+      onShowToast(telegramMsg, 'success');
       onRefresh();
     } catch (err: any) {
       onShowToast(err.message, 'error');
@@ -138,6 +145,7 @@ export default function OrderDetailModal({
 
   const isPaid = order.paymentStatus === 'PAID';
   const isDelivered = order.orderStatus === 'DELIVERED';
+  const hasTelegram = !!order.customerTelegram;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -166,7 +174,7 @@ export default function OrderDetailModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             {/* Customer Box */}
-            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200/80 space-y-2 text-xs">
+            <div className="bg-gray-50 rounded-2xl p-4 border border-gray-200/80 space-y-2.5 text-xs">
               <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">
                 Customer Info
               </span>
@@ -178,19 +186,19 @@ export default function OrderDetailModal({
                 <Phone className="w-3.5 h-3.5 text-gray-400" />
                 <span>{order.customerPhone}</span>
               </div>
-              {order.customerTelegram && (
-                <div className="flex items-center gap-2 text-google-blue">
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <a
-                    href={`https://t.me/${order.customerTelegram.replace('@', '')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:underline font-mono"
-                  >
-                    @{order.customerTelegram.replace('@', '')}
-                  </a>
-                </div>
-              )}
+
+              {/* Visual Telegram Badge (Section 10) */}
+              <div className="pt-1">
+                {hasTelegram ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-mono">
+                    🟢 Telegram provided (@{order.customerTelegram.replace('@', '')})
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 font-mono">
+                    ⚪ Telegram not provided
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Product & Payment Box */}
@@ -243,13 +251,13 @@ export default function OrderDetailModal({
             </div>
           )}
 
-          {/* Supplier Activation Link Delivery Section */}
+          {/* Supplier Activation Link Delivery Section (Section 11) */}
           <div className="bg-blue-50/60 border border-blue-200/80 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Send className="w-4 h-4 text-google-blue" />
                 <h3 className="font-bold text-gray-900 text-sm">
-                  Supplier Activation Link / Invitation URL
+                  Activation Link / Offer Redeem URL
                 </h3>
               </div>
               {isDelivered && (
@@ -260,14 +268,14 @@ export default function OrderDetailModal({
             </div>
 
             <p className="text-xs text-gray-600">
-              Paste the supplier activation URL or invitation code below and click Deliver. This makes the link available on the customer order tracking page and dispatches a Telegram message.
+              Paste the activation redeem link below. Clicking <b>Release Activation</b> updates the order status to DELIVERED and dispatches a Telegram alert if a username is available.
             </p>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <textarea
                 value={activationLink}
                 onChange={(e) => setActivationLink(e.target.value)}
-                placeholder="https://one.google.com/invitation/... or activation code"
+                placeholder="https://one.google.com/invitation/gemini-pro-ethiopia-..."
                 rows={3}
                 className="w-full px-3.5 py-2.5 text-xs font-mono border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-google-blue bg-white"
               />
@@ -279,22 +287,22 @@ export default function OrderDetailModal({
                   className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-google-blue"
                 >
                   {copiedLink ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copiedLink ? 'Customer link copied!' : 'Copy Customer Order URL'}</span>
+                  <span>{copiedLink ? 'Customer link copied!' : 'Copy Customer Tracking URL'}</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleDeliver}
+                  onClick={() => setShowConfirmRelease(true)}
                   disabled={loadingAction === 'deliver' || !activationLink.trim()}
                   className="px-5 py-2.5 bg-google-blue hover:bg-google-blue-hover disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-google-sm flex items-center gap-2"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>
                     {loadingAction === 'deliver'
-                      ? 'Delivering...'
+                      ? 'Releasing...'
                       : isDelivered
-                      ? 'Resend / Update Delivery'
-                      : 'Deliver Activation Link'}
+                      ? 'Resend / Update Release'
+                      : 'Release Activation'}
                   </span>
                 </button>
               </div>
@@ -351,6 +359,53 @@ export default function OrderDetailModal({
         </div>
 
       </div>
+
+      {/* Confirmation Modal before Release Activation (Section 11) */}
+      {showConfirmRelease && (
+        <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-slide-up">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="font-bold text-base text-gray-900">
+                Release Activation to Customer?
+              </h3>
+              <button onClick={() => setShowConfirmRelease(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs text-gray-600">
+              <div className="bg-gray-50 p-3.5 rounded-2xl space-y-1.5 border border-gray-200">
+                <div><b>Customer:</b> {order.customerName} ({order.customerPhone})</div>
+                <div><b>Order Code:</b> <span className="font-mono font-bold text-gray-900">#{order.orderNumber}</span></div>
+                <div><b>Product:</b> {order.product?.nameEn || 'Gemini AI Pro'}</div>
+                <div><b>Telegram:</b> {order.customerTelegram ? `@${order.customerTelegram.replace('@', '')}` : 'Not provided'}</div>
+              </div>
+
+              <p className="text-gray-500 leading-relaxed">
+                This will save the activation link, update the order status to <b>ACTIVATION READY / DELIVERED</b>, and publish it to the customer order tracking page.
+                {order.customerTelegram ? ' A notification will also be sent to Telegram.' : ''}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setShowConfirmRelease(false)}
+                className="px-4 py-2.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDeliver}
+                className="px-5 py-2.5 text-xs font-bold text-white bg-google-blue hover:bg-google-blue-hover rounded-xl shadow-google-sm transition-all flex items-center gap-1.5"
+              >
+                <Send className="w-4 h-4" />
+                <span>Release Activation</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

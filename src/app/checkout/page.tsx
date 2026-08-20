@@ -19,7 +19,6 @@ import {
   Clock,
   Sparkles,
   CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
 
 function CheckoutContent() {
@@ -85,13 +84,18 @@ function CheckoutContent() {
       setToast({ message: t.checkout.errors.phoneRequired, type: 'error' });
       return;
     }
-    if (!customerTelegram.trim()) {
-      setToast({ message: t.checkout.errors.telegramRequired, type: 'error' });
-      return;
-    }
     if (!transactionId.trim() || transactionId.trim().length < 4) {
       setToast({ message: t.checkout.errors.transactionRequired, type: 'error' });
       return;
+    }
+
+    // Normalize telegram username if provided
+    let normalizedTelegram: string | null = null;
+    if (customerTelegram.trim()) {
+      const clean = customerTelegram.trim().replace(/^@/, '');
+      if (clean.length > 0) {
+        normalizedTelegram = clean;
+      }
     }
 
     setSubmitting(true);
@@ -102,7 +106,7 @@ function CheckoutContent() {
         body: JSON.stringify({
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim(),
-          customerTelegram: customerTelegram.trim() || null,
+          customerTelegram: normalizedTelegram,
           productId: selectedProductId,
           transactionId: transactionId.trim().toUpperCase(),
           language,
@@ -234,12 +238,17 @@ function CheckoutContent() {
               />
             </div>
 
-            {/* Telegram Username */}
+            {/* Telegram Username (Optional) */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-                <MessageCircle className="w-3.5 h-3.5 text-google-blue" />
-                <span>{t.checkout.telegram}</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                  <MessageCircle className="w-3.5 h-3.5 text-google-blue" />
+                  <span>{t.checkout.telegram}</span>
+                </label>
+                <span className="text-[11px] font-bold text-google-blue bg-blue-50 px-2 py-0.5 rounded-full">
+                  Optional
+                </span>
+              </div>
               <input
                 type="text"
                 value={customerTelegram}
@@ -247,7 +256,9 @@ function CheckoutContent() {
                 placeholder={t.checkout.telegramPlaceholder}
                 className="w-full px-4 py-3 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-google-blue focus:border-google-blue transition-all"
               />
-              <p className="text-[11px] text-gray-500">{t.checkout.telegramHint}</p>
+              <p className="text-[11px] text-gray-500 leading-relaxed bg-blue-50/50 p-2.5 rounded-xl border border-blue-100">
+                {t.checkout.telegramHint}
+              </p>
             </div>
           </div>
 

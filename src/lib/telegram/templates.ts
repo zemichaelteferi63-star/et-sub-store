@@ -13,7 +13,7 @@ export interface TelegramOrderContext {
 export function getPaymentConfirmationMessage(ctx: TelegramOrderContext, lang: Language = 'en'): string {
   if (lang === 'am') {
     return `✨ *የትዕዛዝ ክፍያ ተረጋግጧል* ✨\n\n` +
-      `ሰላም *${ctx.customerName}*፣ ለትዕዛዝ ቁጥር *#${ctx.orderNumber}* ክፍያዎ በቴሌብር በተሳካ ሁኔታ ተረጋግጧል!\n\n` +
+      `ሰላም *${ctx.customerName}*፣ ለትዕዛዝ ቁጥር *#${ctx.orderNumber}* ክፍያዎ በቴሌብር በተሳካ ሁኔታ ተረጋግጧል! ✅\n\n` +
       `📦 *ምርት:* ${ctx.productName}\n` +
       `💰 *መጠን:* ${ctx.amountETB} ETB\n\n` +
       `የቴክኒክ ቡድናችን የደንበኝነት አክቲቬሽን ሊንክዎን በማዘጋጀት ላይ ነው። እንደተዘጋጀ ወዲያውኑ መልእክት ይደርስዎታል!\n\n` +
@@ -22,7 +22,7 @@ export function getPaymentConfirmationMessage(ctx: TelegramOrderContext, lang: L
   }
 
   return `✨ *Payment Verified!* ✨\n\n` +
-    `Hello *${ctx.customerName}*, your payment for order *#${ctx.orderNumber}* has been verified!\n\n` +
+    `Hello *${ctx.customerName}*, your payment for order *#${ctx.orderNumber}* has been verified! ✅\n\n` +
     `📦 *Product:* ${ctx.productName}\n` +
     `💰 *Amount:* ${ctx.amountETB} ETB\n\n` +
     `Your activation link is being prepared. You will receive it shortly!\n\n` +
@@ -49,22 +49,24 @@ export function getOrderProcessingMessage(ctx: TelegramOrderContext, lang: Langu
 export function getActivationDeliveredMessage(ctx: TelegramOrderContext, lang: Language = 'en'): string {
   const link = ctx.activationLink || ctx.orderUrl;
   if (lang === 'am') {
-    return `🎉 *የ ET-Sub Store ትዕዛዝዎ ዝግጁ ነው!* 🎉\n\n` +
-      `📦 *ምርት:* ${ctx.productName}\n` +
-      `🧾 *ትዕዛዝ ቁጥር:* #${ctx.orderNumber}\n\n` +
+    return `🎉 *የ ET-SUB STORE ትዕዛዝዎ ዝግጁ ነው!* 🎉\n\n` +
+      `ክፍያዎ ተረጋግጧል እና የአክቲቬሽን ሊንክዎ አሁን ዝግጁ ነው። ✅\n\n` +
+      `📦 *ምርት:*\n${ctx.productName}\n\n` +
+      `🧾 *ትዕዛዝ ቁጥር:*\n#${ctx.orderNumber}\n\n` +
       `🔗 *የአክቲቬሽን ሊንክ:*\n${link}\n\n` +
-      `ℹ️ *ማሳሰቢያ: የአክቲቬሽን ሊንኩ ከተላከ በ 4 ሰዓታት ውስጥ ጥቅም ላይ መዋል አለበት። ካልሆነ ጊዜው ሊያልፍበት ይችላል።*\n\n` +
-      `🔗 [የትዕዛዝ ገጽዎን ይክፈቱ](${ctx.orderUrl})\n\n` +
-      `እርዳታ ይፈልጋሉ?\n@Et_substore_support`;
+      `⏰ *እባክዎ የተላከውን አክቲቬሽን ሊንክ በተጠቀሰው ጊዜ ውስጥ ይክፈቱት።*\n\n` +
+      `እርዳታ ይፈልጋሉ?\n@Et_substore_support\n\n` +
+      `ET-Sub Store ን ስለመረጡ እናመሰግናለን! 🇪🇹`;
   }
 
-  return `🎉 *Your ET-Sub Store order is ready!* 🎉\n\n` +
-    `📦 *Product:* ${ctx.productName}\n` +
-    `🧾 *Order:* #${ctx.orderNumber}\n\n` +
+  return `🎉 *YOUR ET-SUB STORE ORDER IS READY!* 🎉\n\n` +
+    `Your payment has been verified and your activation is now ready. ✅\n\n` +
+    `📦 *Product:*\n${ctx.productName}\n\n` +
+    `🧾 *Order:*\n#${ctx.orderNumber}\n\n` +
     `🔗 *Your activation link:*\n${link}\n\n` +
-    `ℹ️ *Important: Please use the redeem link within 4 hours of receiving it.*\n\n` +
-    `🔗 [Open Secure Order Page](${ctx.orderUrl})\n\n` +
-    `Need help?\n@Et_substore_support`;
+    `⏰ *Please use your redeem link within the stated activation period.*\n\n` +
+    `Need help?\n@Et_substore_support\n\n` +
+    `Thank you for choosing ET-Sub Store 🇪🇹`;
 }
 
 export function getExpiryReminderMessage(ctx: TelegramOrderContext, lang: Language = 'en'): string {

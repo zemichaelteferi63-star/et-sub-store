@@ -1,15 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Sparkles, Lock, Mail, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Sparkles, Lock, Mail, ShieldCheck } from 'lucide-react';
 import Toast from '@/components/Toast';
 
 export default function AdminLoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('admin@ethiogemini.com');
-  const [password, setPassword] = useState('Admin@EthioGemini2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
@@ -21,17 +19,18 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid credentials');
 
-      setToast({ message: 'Login successful! Redirecting...', type: 'success' });
+      setToast({ message: 'Login successful! Redirecting to Admin Dashboard...', type: 'success' });
+      
+      // Perform window location replace to ensure session cookie is passed and page reloads cleanly
       setTimeout(() => {
-        router.push('/admin');
-        router.refresh();
-      }, 500);
+        window.location.replace('/admin');
+      }, 300);
     } catch (err: any) {
       setToast({ message: err.message, type: 'error' });
       setLoading(false);
@@ -51,7 +50,7 @@ export default function AdminLoginPage() {
           </div>
           <div>
             <h1 className="font-display font-black text-2xl text-gray-900">
-              Ethio<span className="text-google-blue">Gemini</span> Admin
+              ET-Sub <span className="text-google-blue">Store</span> Admin
             </h1>
             <p className="text-xs text-gray-500 mt-1">
               Secure admin management portal
@@ -60,7 +59,7 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-gray-400" />
@@ -70,8 +69,10 @@ export default function AdminLoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="Enter admin email"
               required
-              className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-google-blue"
+              autoComplete="off"
+              className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-google-blue focus:outline-none"
             />
           </div>
 
@@ -84,8 +85,10 @@ export default function AdminLoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
               required
-              className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-google-blue"
+              autoComplete="new-password"
+              className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-google-blue focus:outline-none"
             />
           </div>
 
@@ -99,7 +102,7 @@ export default function AdminLoginPage() {
             ) : (
               <>
                 <ShieldCheck className="w-4 h-4" />
-                <span>Sign In to Dashboard</span>
+                <span>Login</span>
               </>
             )}
           </button>

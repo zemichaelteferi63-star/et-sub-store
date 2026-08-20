@@ -167,10 +167,16 @@ function AdminOrdersContent() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="font-bold text-gray-900 block">{ord.customerName}</span>
-                        <div className="flex items-center gap-2 text-gray-500 text-[11px] font-mono mt-0.5">
-                          <span>{ord.customerPhone}</span>
-                          {ord.customerTelegram && (
-                            <span className="text-google-blue">@{ord.customerTelegram.replace('@', '')}</span>
+                        <div className="flex flex-col gap-1 text-gray-500 text-[11px] font-mono mt-1">
+                          <span>📞 {ord.customerPhone}</span>
+                          {ord.customerTelegram ? (
+                            <span className="inline-flex items-center gap-1 font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              🟢 Telegram provided (@{ord.customerTelegram.replace('@', '')})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
+                              ⚪ Telegram not provided
+                            </span>
                           )}
                         </div>
                       </td>
