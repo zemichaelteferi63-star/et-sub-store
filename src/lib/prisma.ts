@@ -85,6 +85,54 @@ declare global {
   var _etSubStoreDataCache: DatabaseData | undefined;
 }
 
+const CLOUD_DB_URL = 'https://api.restful-api.dev/objects/ff8081819ff5b11001a01f6d4cf25dae';
+let lastCloudSyncTime = 0;
+
+async function syncFromCloudIfNeeded(): Promise<DatabaseData> {
+  const localData = ensureDataFile();
+  const now = Date.now();
+  if (now - lastCloudSyncTime > 2000) {
+    lastCloudSyncTime = now;
+    try {
+      const res = await fetch(CLOUD_DB_URL, { cache: 'no-store' });
+      if (res.ok) {
+        const body = await res.json();
+        if (body.data?.orders && Array.isArray(body.data.orders)) {
+          const ordersMap = new Map<string, OrderModel>();
+          for (const o of localData.orders) {
+            ordersMap.set((o.orderNumber || o.id).toUpperCase(), o);
+          }
+          for (const o of body.data.orders) {
+            const key = (o.orderNumber || o.id).toUpperCase();
+            if (!ordersMap.has(key)) {
+              ordersMap.set(key, o);
+            } else {
+              const existing = ordersMap.get(key)!;
+              if (new Date(o.updatedAt).getTime() > new Date(existing.updatedAt).getTime()) {
+                ordersMap.set(key, o);
+              }
+            }
+          }
+          localData.orders = Array.from(ordersMap.values());
+          saveLocalDiskOnly(localData);
+        }
+      }
+    } catch (e) {}
+  }
+  return localData;
+}
+
+function saveLocalDiskOnly(data: DatabaseData): void {
+  globalThis._etSubStoreDataCache = data;
+  const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
+  try {
+    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (e) {}
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (e) {}
+}
+
 function ensureDataFile(): DatabaseData {
   const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
   let dataFromTmp: DatabaseData | null = null;
@@ -407,14 +455,12 @@ function ensureDataFile(): DatabaseData {
 }
 
 function saveData(data: DatabaseData): void {
-  globalThis._etSubStoreDataCache = data;
-  const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
-  try {
-    fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (e) {}
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (e) {}
+  saveLocalDiskOnly(data);
+  fetch(CLOUD_DB_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'ethio_gemini_db', data }),
+  }).catch(() => {});
 }
 
 export const prisma = {
@@ -538,7 +584,7 @@ export const prisma = {
   },
   order: {
     findMany: async (args?: { where?: any; include?: any; orderBy?: any; take?: number }) => {
-      const data = ensureDataFile();
+      const data = await syncFromCloudIfNeeded();
       let results = [...data.orders];
 
       if (args?.where) {
@@ -612,12 +658,12 @@ export const prisma = {
       return results;
     },
     findFirst: async (args?: { where?: any; include?: any }) => {
-      const data = ensureDataFile();
+      const data = await syncFromCloudIfNeeded();
       const results = await prisma.order.findMany({ where: args?.where, include: args?.include, take: 1 });
       return results[0] || null;
     },
     findUnique: async ({ where, include }: { where: { orderNumber?: string; id?: string }; include?: any }) => {
-      const data = ensureDataFile();
+      const data = await syncFromCloudIfNeeded();
       const targetOrderNum = where.orderNumber ? where.orderNumber.trim().toUpperCase() : null;
       const targetId = where.id ? where.id.trim() : null;
 
@@ -637,7 +683,7 @@ export const prisma = {
       return order;
     },
     create: async ({ data: payload, include }: { data: any; include?: any }) => {
-      const data = ensureDataFile();
+      const data = await syncFromCloudIfNeeded();
       const newOrder: OrderModel = {
         id: `ord-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         ...payload,
@@ -656,7 +702,7 @@ export const prisma = {
       return newOrder;
     },
     update: async ({ where, data: payload, include }: { where: { orderNumber?: string; id?: string }; data: any; include?: any }) => {
-      const data = ensureDataFile();
+      const data = await syncFromCloudIfNeeded();
       const targetOrderNum = where.orderNumber ? where.orderNumber.trim().toUpperCase() : null;
       const targetId = where.id ? where.id.trim() : null;
 
