@@ -189,6 +189,27 @@ async function runTests() {
     throw new Error(`Customer cannot see released activation link!`);
   }
 
+  // Clean up test orders so live DB stays 100% clean for real customers
+  const cleanDb = () => {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const dbPath = path.join(__dirname, 'prisma', 'dev-data.json');
+      if (fs.existsSync(dbPath)) {
+        const data = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+        data.orders = data.orders.filter(o => o.orderNumber !== orderNumber1 && o.orderNumber !== orderNumber2 && !o.customerName.includes('Abebe') && !o.customerName.includes('Tigist'));
+        fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
+      }
+      const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
+      if (fs.existsSync(tmpFile)) {
+        const data = JSON.parse(fs.readFileSync(tmpFile, 'utf-8'));
+        data.orders = data.orders.filter(o => o.orderNumber !== orderNumber1 && o.orderNumber !== orderNumber2 && !o.customerName.includes('Abebe') && !o.customerName.includes('Tigist'));
+        fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
+      }
+    } catch (e) {}
+  };
+  cleanDb();
+
   console.log('\n====================================================');
   console.log('🎉 ALL SECURITY & CUSTOMER FLOW TESTS PASSED!');
   console.log('====================================================\n');
