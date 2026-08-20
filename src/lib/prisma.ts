@@ -477,11 +477,24 @@ function ensureDataFile(): DatabaseData {
 async function saveData(data: DatabaseData): Promise<void> {
   saveLocalDiskOnly(data);
   try {
-    await fetch(CLOUD_DB_URL, {
+    let res = await fetch(getCloudUrl(), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'ethio_gemini_db', data }),
+      body: JSON.stringify({ name: 'ethio_gemini_store_db', data }),
     });
+    if (res.status === 404) {
+      const createRes = await fetch('https://api.restful-api.dev/objects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'ethio_gemini_store_db', data }),
+      });
+      if (createRes.ok) {
+        const newObj = await createRes.json();
+        if (newObj.id) {
+          activeCloudObjectId = newObj.id;
+        }
+      }
+    }
   } catch (e) {
     console.error('Cloud DB sync error:', e);
   }
