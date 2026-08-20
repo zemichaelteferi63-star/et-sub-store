@@ -152,14 +152,7 @@
       "updatedAt": "2026-08-14T13:15:30.275Z"
     }
   ],
-  "orders": [
-    {
-      "id": "ord-1"
-    },
-    {
-      "id": "ord-2"
-    }
-  ],
+  "orders": [],
   "settings": [
     {
       "key": "storeName",
