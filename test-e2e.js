@@ -74,9 +74,9 @@ async function runTests() {
   // Test 3: Customer Checkout with Telegram Username
   console.log('\n3. Testing Customer Checkout WITH Telegram Username...');
   const orderPayloadWithTG = {
-    customerName: 'Abebe Kebede',
+    customerName: 'E2E Test User With TG',
     customerPhone: '+251988788834',
-    customerTelegram: '@AbebeAI',
+    customerTelegram: '@E2ETestUser',
     productId: gemini18m.id,
     transactionId: 'TB77889911',
     language: 'am',
@@ -93,12 +93,12 @@ async function runTests() {
   }
   const orderNumber1 = createOrderRes1.json.orderNumber;
   const accessToken1 = createOrderRes1.json.accessToken;
-  console.log(`✓ Order 1 Created (With Telegram @AbebeAI): ${orderNumber1}`);
+  console.log(`✓ Order 1 Created (With Telegram @E2ETestUser): ${orderNumber1}`);
 
   // Test 4: Customer Checkout WITHOUT Telegram Username (OPTIONAL TELEGRAM REQUIREMENT)
   console.log('\n4. Testing Customer Checkout WITHOUT Telegram Username (OPTIONAL TELEGRAM)...');
   const orderPayloadNoTG = {
-    customerName: 'Tigist Alemu',
+    customerName: 'E2E Test User No TG',
     customerPhone: '+251911998877',
     customerTelegram: '', // empty / optional
     productId: gemini18m.id,
@@ -197,13 +197,13 @@ async function runTests() {
       const dbPath = path.join(__dirname, 'prisma', 'dev-data.json');
       if (fs.existsSync(dbPath)) {
         const data = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-        data.orders = data.orders.filter(o => o.orderNumber !== orderNumber1 && o.orderNumber !== orderNumber2 && !o.customerName.includes('Abebe') && !o.customerName.includes('Tigist'));
+        data.orders = data.orders.filter(o => o.orderNumber !== orderNumber1 && o.orderNumber !== orderNumber2 && !o.customerName?.includes('Abebe') && !o.customerName?.includes('Tigist') && !o.customerName?.includes('E2E Test'));
         fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf-8');
       }
       const tmpFile = path.join(process.env.TMPDIR || process.env.TEMP || '/tmp', 'ethio-gemini-dev-data.json');
       if (fs.existsSync(tmpFile)) {
         const data = JSON.parse(fs.readFileSync(tmpFile, 'utf-8'));
-        data.orders = data.orders.filter(o => o.orderNumber !== orderNumber1 && o.orderNumber !== orderNumber2 && !o.customerName.includes('Abebe') && !o.customerName.includes('Tigist'));
+        data.orders = data.orders.filter(o => o.orderNumber !== orderNumber1 && o.orderNumber !== orderNumber2 && !o.customerName?.includes('Abebe') && !o.customerName?.includes('Tigist') && !o.customerName?.includes('E2E Test'));
         fs.writeFileSync(tmpFile, JSON.stringify(data, null, 2), 'utf-8');
       }
     } catch (e) {}

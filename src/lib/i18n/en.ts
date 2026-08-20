@@ -60,7 +60,7 @@ export const en = {
     subtitle: 'Complete your customer details and pay securely via Telebirr',
     customerInfo: 'Customer Information',
     fullName: 'Full Name',
-    fullNamePlaceholder: 'e.g. Abebe Kebede',
+    fullNamePlaceholder: 'e.g. Kebede Tesfaye',
     phone: 'Phone Number',
     phonePlaceholder: '0911536487',
     telegram: 'Telegram Username (Optional)',
