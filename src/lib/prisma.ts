@@ -85,17 +85,85 @@ declare global {
   var _etSubStoreDataCache: DatabaseData | undefined;
 }
 
+let activeCloudObjectId = 'ethio_gemini_store_prod_v2_zemichael_0996976737';
+let lastCloudSyncTime = 0;
+
+function getCloudUrl(): string {
+  return `https://api.restful-api.dev/objects/${activeCloudObjectId}`;
+}
+
 async function syncFromCloudIfNeeded(): Promise<DatabaseData> {
-  return ensureDataFile();
+  const localData = ensureDataFile();
+  const now = Date.now();
+  if (now - lastCloudSyncTime > 1500) {
+    lastCloudSyncTime = now;
+    try {
+      let res = await fetch(getCloudUrl(), { cache: 'no-store' });
+      if (res.status === 404) {
+        const createRes = await fetch('https://api.restful-api.dev/objects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: 'ethio_gemini_store_db_v2', data: localData }),
+        });
+        if (createRes.ok) {
+          const newObj = await createRes.json();
+          if (newObj.id) activeCloudObjectId = newObj.id;
+        }
+      } else if (res.ok) {
+        const body = await res.json();
+        if (body.data?.orders && Array.isArray(body.data.orders)) {
+          const ordersMap = new Map<string, OrderModel>();
+          for (const o of localData.orders) {
+            if (o?.orderNumber) ordersMap.set((o.orderNumber || o.id).toUpperCase(), o);
+          }
+          for (const o of body.data.orders) {
+            if (!o?.orderNumber) continue;
+            const key = (o.orderNumber || o.id).toUpperCase();
+            if (!ordersMap.has(key)) {
+              ordersMap.set(key, o);
+            } else {
+              const existing = ordersMap.get(key)!;
+              if (new Date(o.updatedAt).getTime() > new Date(existing.updatedAt).getTime()) {
+                ordersMap.set(key, o);
+              }
+            }
+          }
+          localData.orders = Array.from(ordersMap.values());
+          saveLocalDiskOnly(localData);
+        }
+      }
+    } catch (e) {}
+  }
+  return localData;
+}
+
+async function saveData(data: DatabaseData): Promise<void> {
+  saveLocalDiskOnly(data);
+  try {
+    let res = await fetch(getCloudUrl(), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'ethio_gemini_store_db_v2', data }),
+    });
+    if (res.status === 404) {
+      const createRes = await fetch('https://api.restful-api.dev/objects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'ethio_gemini_store_db_v2', data }),
+      });
+      if (createRes.ok) {
+        const newObj = await createRes.json();
+        if (newObj.id) activeCloudObjectId = newObj.id;
+      }
+    }
+  } catch (e) {}
 }
 
 function saveLocalDiskOnly(data: DatabaseData): void {
   globalThis._etSubStoreDataCache = data;
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (e) {
-    console.error('Error writing DB_FILE:', e);
-  }
+  } catch (e) {}
 }
 
 function ensureDataFile(): DatabaseData {
@@ -376,10 +444,6 @@ function ensureDataFile(): DatabaseData {
   return initialData;
 }
 
-async function saveData(data: DatabaseData): Promise<void> {
-  saveLocalDiskOnly(data);
-}
-
 export const prisma = {
   admin: {
     findUnique: async ({ where }: { where: { email?: string; id?: string } }) => {
@@ -581,14 +645,20 @@ export const prisma = {
     },
     findUnique: async ({ where, include }: { where: { orderNumber?: string; id?: string }; include?: any }) => {
       const data = await syncFromCloudIfNeeded();
-      const targetOrderNum = typeof where.orderNumber === 'string' ? where.orderNumber.trim().toUpperCase() : null;
-      const targetId = typeof where.id === 'string' ? where.id.trim() : null;
+      const norm = (str?: string | null) => (str ? String(str).replace(/^#/, '').trim().toUpperCase() : '');
+      const targetOrderNum = norm(where.orderNumber);
+      const targetId = norm(where.id);
 
-      const order = data.orders.find(
-        (o) =>
-          (targetOrderNum && typeof o.orderNumber === 'string' && o.orderNumber.trim().toUpperCase() === targetOrderNum) ||
-          (targetId && o.id && (o.id === targetId || String(o.id).trim() === targetId))
-      );
+      const order = data.orders.find((o) => {
+        if (!o) return false;
+        const oNum = norm(o.orderNumber);
+        const oId = norm(o.id);
+        const oToken = norm(o.accessToken);
+        return (
+          (targetOrderNum && (oNum === targetOrderNum || oId === targetOrderNum || oToken === targetOrderNum)) ||
+          (targetId && (oNum === targetId || oId === targetId || oToken === targetId))
+        );
+      });
       if (!order) return null;
 
       if (include?.product) {

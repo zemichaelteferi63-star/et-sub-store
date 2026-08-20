@@ -46,12 +46,12 @@ export default async function AdminDashboardPage() {
     }),
   ]);
 
-  // Aggregate revenue
+  const safeRecentOrders = Array.isArray(recentOrders) ? recentOrders : [];
   const revenueAgg = await prisma.order.aggregate({
     _sum: { amountETB: true },
     where: { paymentStatus: 'PAID' },
   });
-  const totalRevenueETB = revenueAgg._sum.amountETB || 0;
+  const totalRevenueETB = revenueAgg?._sum?.amountETB || 0;
 
   const metrics = [
     {
@@ -63,35 +63,35 @@ export default async function AdminDashboardPage() {
     },
     {
       title: 'Total Orders',
-      value: totalOrders.toString(),
+      value: (totalOrders || 0).toString(),
       icon: <ShoppingBag className="w-5 h-5 text-google-blue" />,
       bg: 'bg-blue-50',
       border: 'border-blue-100',
     },
     {
       title: 'Pending Fulfillment',
-      value: pendingOrders.toString(),
+      value: (pendingOrders || 0).toString(),
       icon: <Clock className="w-5 h-5 text-amber-500" />,
       bg: 'bg-amber-50',
       border: 'border-amber-100',
     },
     {
       title: 'Delivered Subscriptions',
-      value: deliveredOrders.toString(),
+      value: (deliveredOrders || 0).toString(),
       icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />,
       bg: 'bg-emerald-50',
       border: 'border-emerald-100',
     },
     {
       title: 'Paid Orders',
-      value: paidOrders.toString(),
+      value: (paidOrders || 0).toString(),
       icon: <TrendingUp className="w-5 h-5 text-purple-600" />,
       bg: 'bg-purple-50',
       border: 'border-purple-100',
     },
     {
       title: 'Active Subscription Plans',
-      value: activeSubscriptions.toString(),
+      value: (activeSubscriptions || 0).toString(),
       icon: <Layers className="w-5 h-5 text-sky-600" />,
       bg: 'bg-sky-50',
       border: 'border-sky-100',
@@ -161,14 +161,14 @@ export default async function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {recentOrders.length === 0 ? (
+                {safeRecentOrders.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-8 text-center text-gray-400">
                       No orders recorded yet.
                     </td>
                   </tr>
                 ) : (
-                  recentOrders.map((ord) => (
+                  safeRecentOrders.map((ord) => (
                     <tr key={ord.id} className="hover:bg-gray-50/80 transition-colors">
                       <td className="px-6 py-4 font-mono font-bold text-gray-900">
                         #{ord.orderNumber}
